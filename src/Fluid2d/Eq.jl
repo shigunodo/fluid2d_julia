@@ -1,22 +1,23 @@
 module Eq
 
+import ..ArrayBuffer
 import ..BasicVarHD
 import ..GenStructCoord
 import ..EulerEq
 using ..FluxScheme: reconst_by_basic_muscl, reconst_by_basic_mp5, calc_num_flux
 
 # calc RHS with selected reconstruction/flux scheme
-function calc_rhs(reconstruction, flux_scheme, basic::BasicVarHD, coord::GenStructCoord, eos, eq::EulerEq)
+function calc_rhs(arrbuff::ArrayBuffer, reconstruction, flux_scheme, basic::BasicVarHD, coord::GenStructCoord, eos, eq::EulerEq)
 
   NI = basic.NI
   NJ = basic.NJ
   NB = basic.NB
-  arr_fi = zeros(4,NI-2*NB+1,NJ-2*NB)
-  arr_fj = zeros(4,NI-2*NB,NJ-2*NB+1)
+  arr_fi = arrbuff.arr_fi
+  arr_fj = arrbuff.arr_fj
 
   # i-direction
   # evaluating numerical flux at (i+0.5,j)
-  for j = 1:NJ-2*NB
+  @inbounds for j = 1:NJ-2*NB
     for i = 1:NI-2*NB+1
 
       # inverse of Jacobian is evaluated
@@ -52,7 +53,7 @@ function calc_rhs(reconstruction, flux_scheme, basic::BasicVarHD, coord::GenStru
 
   # j-direction
   # evaluating numerical flux at (i,j+0.5)
-  for j = 1:NJ-2*NB+1
+  @inbounds for j = 1:NJ-2*NB+1
     for i = 1:NI-2*NB
 
       # inverse of Jacobian is evaluated
@@ -85,7 +86,13 @@ function calc_rhs(reconstruction, flux_scheme, basic::BasicVarHD, coord::GenStru
   end # for j
 
   # evaluating RHS
-  return @views @. arr_fi[:,1:NI-2*NB,:] - arr_fi[:,2:NI-2*NB+1,:] + arr_fj[:,:,1:NJ-2*NB] - arr_fj[:,:,2:NJ-2*NB+1]
+  fill!(arrbuff.arr_rhs, 0.0)
+  arr_rhs = arrbuff.arr_rhs
+  arr_rhs .+= @view arr_fi[:,1:NI-2*NB,:]
+  arr_rhs .-= @view arr_fi[:,2:NI-2*NB+1,:]
+  arr_rhs .+= @view arr_fj[:,:,1:NJ-2*NB]
+  arr_rhs .-= @view arr_fj[:,:,2:NJ-2*NB+1]
+  return arr_rhs
 end # function calc_rhs
 
 # export calc_rhs

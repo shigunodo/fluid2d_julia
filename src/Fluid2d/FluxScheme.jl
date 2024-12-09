@@ -18,10 +18,12 @@ end
 
 # reconstruct by basic variables with MP5
 function reconst_by_basic_mp5(rho,u,v,e)
-  rho_l, rho_r = mp5(rho[1],rho[2],rho[3],rho[4],rho[5],rho[6])
-  u_l, u_r = mp5(u[1],u[2],u[3],u[4],u[5],u[6])
-  v_l, v_r = mp5(v[1],v[2],v[3],v[4],v[5],v[6])
-  e_l, e_r = mp5(e[1],e[2],e[3],e[4],e[5],e[6])
+  @inbounds begin
+    rho_l, rho_r = mp5(rho[1],rho[2],rho[3],rho[4],rho[5],rho[6])
+    u_l, u_r = mp5(u[1],u[2],u[3],u[4],u[5],u[6])
+    v_l, v_r = mp5(v[1],v[2],v[3],v[4],v[5],v[6])
+    e_l, e_r = mp5(e[1],e[2],e[3],e[4],e[5],e[6])
+  end
   return rho_l, u_l, v_l, e_l, rho_r, u_r, v_r, e_r
 end
 
@@ -44,9 +46,10 @@ function roe_average(rho_l,u_l,v_l,e_l,rho_r,u_r,v_r,e_r,eos)
   sqr_r = sqrt(rho_r)
 
   rho_a = sqr_l * sqr_r
-  u_a = (sqr_l*u_l + sqr_r*u_r)/(sqr_l + sqr_r)
-  v_a = (sqr_l*v_l + sqr_r*v_r)/(sqr_l + sqr_r)
-  h_a = (sqr_l*h_l + sqr_r*h_r)/(sqr_l + sqr_r)
+  inv_sqr_l_plus_sqr_r = inv(sqr_l + sqr_r)
+  u_a = (sqr_l*u_l + sqr_r*u_r) * inv_sqr_l_plus_sqr_r
+  v_a = (sqr_l*v_l + sqr_r*v_r) * inv_sqr_l_plus_sqr_r
+  h_a = (sqr_l*h_l + sqr_r*h_r) * inv_sqr_l_plus_sqr_r
   e_a = calc_e(rho_a,u_a,v_a,h_a,eos)
   return rho_a,u_a,v_a,e_a
 end
@@ -63,7 +66,6 @@ function roe_fds(rho_l, u_l, v_l, e_l, rho_r, u_r, v_r, e_r, ixs, iys, s, eos)
   vec_f_l = calc_flux_conv(rho_l,u_l,v_l,e_l,ixs,iys,eos)
   vec_f_r = calc_flux_conv(rho_r,u_r,v_r,e_r,ixs,iys,eos)
   dia_lam, mat_r, mat_rinv = calc_eigen(rho_a,u_a,v_a,e_a,ix,iy,eos)
-
   vec_fc = 0.5 .* (vec_f_r .+ vec_f_l  .- mat_r * abs.(dia_lam) * mat_rinv * (vec_q_r .- vec_q_l))
 
   return vec_fc
