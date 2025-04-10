@@ -2,11 +2,12 @@ using Fluid2d
 using Dates
 
 function iteration(tstep, dt_out, t, iter, fluid::IdealGas)
+  qbuff = Fluid2d.ArrayBuffer(fluid.basic)
   while t < tstep * dt_out
     # CFL condition
     dt = calc_cfl(0.7, fluid.basic, fluid.coord, fluid.eos)
     # marching
-    march_ssprk3(dt, "periodical_in_i", "MP5_basic", "Roe_FDS", fluid.basic, fluid.coord, fluid.eos, fluid.eq)
+    march_ssprk3(qbuff, dt, "periodical_in_i", "MP5_basic", "Roe_FDS", fluid.basic, fluid.coord, fluid.eos, fluid.eq)
     t = t + dt
     iter = iter + 1
   end

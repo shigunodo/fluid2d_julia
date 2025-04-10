@@ -38,6 +38,26 @@ mutable struct BasicVarHD
   BasicVarHD(NI, NJ, NB) = new(NI, NJ, NB, zeros(NI,NJ), zeros(NI,NJ), zeros(NI,NJ), zeros(NI,NJ))
 end
 
+
+struct ArrayBuffer
+  arr_q0::Array{Float64, 3}
+  arr_q1::Array{Float64, 3}
+  arr_q2::Array{Float64, 3}
+  arr_fi::Array{Float64, 3}
+  arr_fj::Array{Float64, 3}
+  arr_rhs::Array{Float64, 3}
+  function ArrayBuffer(basic::BasicVarHD)
+    (; NI, NB, NJ, NB) = basic
+    arr_q0 = zeros(NB,NI-2*NB,NJ-2*NB)
+    arr_q1 = zeros(NB,NI-2*NB,NJ-2*NB)
+    arr_q2 = zeros(NB,NI-2*NB,NJ-2*NB)
+    arr_fi = zeros(NB,NI-2*NB+1,NJ-2*NB)
+    arr_fj = zeros(NB,NI-2*NB,NJ-2*NB+1)
+    arr_rhs = zeros(NB,NI-2*NB,NJ-2*NB)
+    new(arr_q0, arr_q1, arr_q2, arr_fi, arr_fj, arr_rhs)
+  end
+end
+
 struct EulerEq
   # no member variables
 end
